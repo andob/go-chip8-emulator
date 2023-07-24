@@ -1,7 +1,9 @@
 package chip8
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/inancgumus/screen"
 	"math/rand"
 	"strconv"
 	"time"
@@ -103,6 +105,9 @@ func cls(chip8 *System) {
 			chip8.Display[i][j] = false
 		}
 	}
+
+	screen.Clear()
+	screen.MoveTopLeft()
 }
 
 func ret(chip8 *System) {
@@ -269,8 +274,46 @@ func rnd(chip8 *System, i uint8, value uint8) {
 	chip8.Registers[i] = uint8(rand.Int()%0xFF) & value
 }
 
-func draw(chip *System, x uint8, y uint8, nibble uint8) {
-	//todo draw on screen
+func draw(chip8 *System, ix uint8, iy uint8, height uint8) {
+	if int(ix) < len(chip8.Registers) && int(iy) < len(chip8.Registers) {
+		chip8.Registers[0x0F] = 0x00
+
+		displayWidth := len(chip8.Display)
+		displayHeight := len(chip8.Display[0])
+		x := int(chip8.Registers[ix]) % displayWidth
+		y := int(chip8.Registers[iy]) % displayHeight
+
+		for row := 0; row < int(height); row++ {
+			ny := (y + row) % displayHeight
+			index := (int(chip8.Index) + row) % len(chip8.RAM)
+			spriteByte := int(chip8.RAM[index])
+			for bitIndex := 7; bitIndex >= 0; bitIndex-- {
+				nx := (x + (7 - bitIndex)) % displayWidth
+				bit := (spriteByte&(0x00000001<<bitIndex))>>bitIndex == 1
+				oldValue := chip8.Display[nx][ny]
+				newValue := bit != oldValue
+				chip8.Display[nx][ny] = newValue
+				if oldValue && !newValue { //pixel turned off
+					chip8.Registers[0x0F] = 0x01
+				}
+			}
+		}
+
+		var buffer bytes.Buffer
+		for y := 0; y < len(chip8.Display[0]); y++ {
+			for x := 0; x < len(chip8.Display); x++ {
+				if chip8.Display[x][y] {
+					buffer.WriteString("▓▓▓")
+				} else {
+					buffer.WriteString("░░░")
+				}
+			}
+			buffer.WriteString("\n")
+		}
+		screen.Clear()
+		screen.MoveTopLeft()
+		fmt.Println(buffer.String())
+	}
 }
 
 func skp(chip8 *System, i uint8) {
@@ -334,6 +377,7 @@ func add3(chip8 *System, i uint8) {
 func ldf(chip8 *System, i uint8) {
 	if int(i) < len(chip8.Registers) {
 		//todo set I = location of sprite for digit Ri
+
 	}
 }
 

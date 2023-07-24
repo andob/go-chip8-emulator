@@ -1,10 +1,17 @@
 package main
 
-import "chip8/chip8"
+import (
+	"chip8/chip8"
+	"os"
+)
 
 func main() {
 
-	romFilePath := "./IBM Logo.ch8"
+	if len(os.Args) <= 1 {
+		panic("Syntax: chip8 <romfile>")
+	}
+
+	romFilePath := os.Args[1]
 	emulator, err := chip8.NewEmulator(romFilePath)
 	if err != nil {
 		panic(err)

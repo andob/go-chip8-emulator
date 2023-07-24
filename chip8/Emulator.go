@@ -32,7 +32,7 @@ func NewEmulator(romFilePath string) (*System, error) {
 	}
 
 	//load ROM into RAM
-	chip8.ProgramCounter = 200 //load ROM into RAM index 200
+	chip8.ProgramCounter = 0x200 //load ROM into RAM index 200
 	if romFile, err := os.Open(romFilePath); err == nil {
 		if romFileBytes, err := io.ReadAll(romFile); err == nil {
 			for index, value := range romFileBytes {
