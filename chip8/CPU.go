@@ -19,7 +19,7 @@ func (chip8 *System) nextOpcode() uint16 {
 	return 0
 }
 
-func (chip8 *System) CPUTick() {
+func (chip8 *System) cpuTick() {
 	chip8.Lock.Lock()
 
 	//http://devernay.free.fr/hacks/chip8/C8TECH10.HTM

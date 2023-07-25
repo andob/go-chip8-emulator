@@ -5,10 +5,7 @@ import (
 	"io"
 	"os"
 	"sync"
-	"time"
 )
-
-const TIMER_LAG = 16666667 //60Hz in nanoseconds
 
 type System struct {
 	RAM             [4 * 1024]uint8
@@ -59,31 +56,19 @@ func (chip8 *System) Start() error {
 
 	go func() {
 		for {
-			chip8.CPUTick()
+			chip8.cpuTick()
 		}
 	}()
 
 	go func() {
 		for {
-			chip8.Lock.Lock()
-			if chip8.DelayTimer > 0 {
-				chip8.DelayTimer--
-			}
-			chip8.Lock.Unlock()
-			//todo do actual beeping
-			//todo create README.md
-			time.Sleep(TIMER_LAG)
+			chip8.delayTimerTick()
 		}
 	}()
 
 	go func() {
 		for {
-			chip8.Lock.Lock()
-			if chip8.SoundTimer > 0 {
-				chip8.SoundTimer--
-			}
-			chip8.Lock.Unlock()
-			time.Sleep(TIMER_LAG)
+			chip8.soundTimerTick()
 		}
 	}()
 
