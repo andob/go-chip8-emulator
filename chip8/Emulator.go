@@ -1,27 +1,35 @@
 package chip8
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
+	"github.com/inancgumus/screen"
 	"io"
 	"os"
+	"sync"
+	"time"
 )
 
 type System struct {
-	RAM            [4 * 1024]uint8
-	Registers      [16]uint8
-	ProgramCounter uint16
-	Index          uint16
-	Stack          Stack
-	DelayTimer     uint8
-	SoundTimer     uint8
-	Display        [64][32]bool
-	Font           Font
-	PressedKey     *uint8
+	RAM             [4 * 1024]uint8
+	Registers       [16]uint8
+	RegistersBackup [16]uint8
+	ProgramCounter  uint16
+	Index           uint16
+	Stack           Stack
+	DelayTimer      uint8
+	SoundTimer      uint8
+	Display         [64][32]bool
+	Font            Font
+	PressedKey      *uint8
+	Lock            sync.RWMutex
 }
 
 func NewEmulator(romFilePath string) (*System, error) {
 	chip8 := System{}
 	chip8.Stack = Stack{}
+	chip8.Lock = sync.RWMutex{}
 
 	//load font into RAM
 	chip8.Font = DefaultFont
@@ -49,7 +57,32 @@ func NewEmulator(romFilePath string) (*System, error) {
 }
 
 func (chip8 *System) Start() {
+	go func() {
+		for {
+			chip8.render()
+			time.Sleep(1000000000)
+		}
+	}()
+
 	for {
 		chip8.CPUTick()
 	}
+}
+
+func (chip8 *System) render() {
+	var buffer bytes.Buffer
+	for y := 0; y < len(chip8.Display[0]); y++ {
+		for x := 0; x < len(chip8.Display); x++ {
+			if chip8.Display[x][y] {
+				buffer.WriteString("▓▓▓")
+			} else {
+				buffer.WriteString("░░░")
+			}
+		}
+		buffer.WriteString("\n")
+	}
+
+	screen.Clear()
+	screen.MoveTopLeft()
+	fmt.Println(buffer.String())
 }

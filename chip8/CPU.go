@@ -1,9 +1,7 @@
 package chip8
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/inancgumus/screen"
 	"math/rand"
 	"strconv"
 	"time"
@@ -22,6 +20,8 @@ func (chip8 *System) nextOpcode() uint16 {
 }
 
 func (chip8 *System) CPUTick() {
+	chip8.Lock.Lock()
+
 	//http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
 	opcode := chip8.nextOpcode()
 	if opcode == 0x00E0 {
@@ -57,7 +57,7 @@ func (chip8 *System) CPUTick() {
 	} else if opcode>>0xC == 0x8 && opcode&0x000F == 0x6 {
 		shr(chip8, uint8((opcode>>8)&0x0F))
 	} else if opcode>>0xC == 0x8 && opcode&0x000F == 0x7 {
-		sub(chip8, uint8((opcode>>4)&0x0F), uint8((opcode>>8)&0x0F))
+		subn(chip8, uint8((opcode>>8)&0x0F), uint8((opcode>>4)&0x0F))
 	} else if opcode>>0xC == 0x8 && opcode&0x000F == 0xE {
 		shl(chip8, uint8((opcode>>8)&0x0F))
 	} else if opcode>>0xC == 0x9 && opcode&0x000F == 0x0 {
@@ -92,10 +92,15 @@ func (chip8 *System) CPUTick() {
 		reg2mem(chip8, uint8((opcode>>8)&0x0F))
 	} else if opcode>>0xC == 0xF && opcode&0xFF == 0x65 {
 		mem2reg(chip8, uint8((opcode>>8)&0x0F))
+	} else if opcode>>0xC == 0xF && opcode&0xFF == 0x75 {
+		reg2backup(chip8, uint8((opcode>>8)&0x0F))
+	} else if opcode>>0xC == 0xF && opcode&0xFF == 0x85 {
+		backup2reg(chip8, uint8((opcode>>8)&0x0F))
 	} else if opcode != 0 {
 		fmt.Printf("Opcode not implemented %s!\n", strconv.FormatInt(int64(opcode), 0xF+1))
 	}
 
+	chip8.Lock.Unlock()
 	time.Sleep(LAG)
 }
 
@@ -105,9 +110,6 @@ func cls(chip8 *System) {
 			chip8.Display[i][j] = false
 		}
 	}
-
-	screen.Clear()
-	screen.MoveTopLeft()
 }
 
 func ret(chip8 *System) {
@@ -214,12 +216,22 @@ func sub(chip8 *System, i uint8, j uint8) {
 	//substract: Ri = Ri - Rj
 	if int(i) < len(chip8.Registers) && int(j) < len(chip8.Registers) {
 		result := int16(chip8.Registers[i]) - int16(chip8.Registers[j])
-		if result < 0 {
-			result += 0xFF
-		}
 		chip8.Registers[i] = uint8(result & 0xFF)
 		if result < 0 {
-			chip8.Registers[0x0F] = 0 //overflow
+			chip8.Registers[0x0F] = 0 //underflow
+		} else {
+			chip8.Registers[0x0F] = 1
+		}
+	}
+}
+
+func subn(chip8 *System, i uint8, j uint8) {
+	//substract: Ri = Rj - Ri
+	if int(i) < len(chip8.Registers) && int(j) < len(chip8.Registers) {
+		result := int16(chip8.Registers[j]) - int16(chip8.Registers[i])
+		chip8.Registers[i] = uint8(result & 0xFF)
+		if result < 0 {
+			chip8.Registers[0x0F] = 0 //underflow
 		} else {
 			chip8.Registers[0x0F] = 1
 		}
@@ -241,11 +253,7 @@ func shr(chip8 *System, i uint8) {
 func shl(chip8 *System, i uint8) {
 	//shift left: Ri = Ri << 1
 	if int(i) < len(chip8.Registers) {
-		if chip8.Registers[i]&0b00000001 == 1 {
-			chip8.Registers[0x0F] = 1
-		} else {
-			chip8.Registers[0x0F] = 0
-		}
+		chip8.Registers[0x0F] = (chip8.Registers[i] & 0b10000000) >> 7
 		chip8.Registers[i] <<= 1
 	}
 }
@@ -298,21 +306,6 @@ func draw(chip8 *System, ix uint8, iy uint8, height uint8) {
 				}
 			}
 		}
-
-		var buffer bytes.Buffer
-		for y := 0; y < len(chip8.Display[0]); y++ {
-			for x := 0; x < len(chip8.Display); x++ {
-				if chip8.Display[x][y] {
-					buffer.WriteString("▓▓▓")
-				} else {
-					buffer.WriteString("░░░")
-				}
-			}
-			buffer.WriteString("\n")
-		}
-		screen.Clear()
-		screen.MoveTopLeft()
-		fmt.Println(buffer.String())
 	}
 }
 
@@ -366,7 +359,7 @@ func add3(chip8 *System, i uint8) {
 	if int(i) < len(chip8.Registers) {
 		result := uint32(chip8.Registers[i]) + uint32(chip8.Index)
 		chip8.Index = uint16(result & 0xFFFF)
-		if result > 0xFFFF {
+		if result > 0x00FF {
 			chip8.Registers[0x0F] = 1 //overflow
 		} else {
 			chip8.Registers[0x0F] = 0
@@ -375,9 +368,12 @@ func add3(chip8 *System, i uint8) {
 }
 
 func ldf(chip8 *System, i uint8) {
+	//location of sprite of digit from font
 	if int(i) < len(chip8.Registers) {
-		//todo set I = location of sprite for digit Ri
-
+		charIndex := chip8.Registers[i]
+		if int(charIndex) < len(chip8.Font.chars) {
+			chip8.Index = chip8.Font.chars[charIndex].Address
+		}
 	}
 }
 
@@ -386,8 +382,8 @@ func ldb(chip8 *System, i uint8) {
 	if int(i) < len(chip8.Registers) && int(chip8.Index)+2 < len(chip8.RAM) {
 		value := chip8.Registers[i]
 		chip8.RAM[chip8.Index+0] = (value / 100) % 10
-		chip8.RAM[chip8.Index+1] = (value / 010) % 10
-		chip8.RAM[chip8.Index+2] = (value / 001) % 10
+		chip8.RAM[chip8.Index+1] = (value / 10) % 10
+		chip8.RAM[chip8.Index+2] = value % 10
 	}
 }
 
@@ -411,6 +407,24 @@ func mem2reg(chip8 *System, amount uint8) {
 			if pointer < len(chip8.RAM) {
 				chip8.Registers[i] = chip8.RAM[pointer]
 			}
+		}
+	}
+}
+
+func reg2backup(chip8 *System, amount uint8) {
+	//store registers R0..R_amount into backup
+	if int(amount) < len(chip8.Registers) {
+		for i := 0; i <= int(amount); i++ {
+			chip8.RegistersBackup[i] = chip8.Registers[i]
+		}
+	}
+}
+
+func backup2reg(chip8 *System, amount uint8) {
+	//restore registers R0..R_amount from backup
+	if int(amount) < len(chip8.Registers) {
+		for i := 0; i <= int(amount); i++ {
+			chip8.Registers[i] = chip8.RegistersBackup[i]
 		}
 	}
 }
