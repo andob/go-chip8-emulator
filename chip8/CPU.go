@@ -311,15 +311,21 @@ func draw(chip8 *System, ix uint8, iy uint8, height uint8) {
 
 func skp(chip8 *System, i uint8) {
 	//skip next instruction if key i is pressed
-	if chip8.PressedKey != nil && *chip8.PressedKey == i {
-		chip8.nextOpcode()
+	if int(i) < len(chip8.Registers) {
+		expectedKey := chip8.Registers[i]
+		if chip8.PressedKey != nil && *chip8.PressedKey == expectedKey {
+			chip8.nextOpcode()
+		}
 	}
 }
 
 func sknp(chip8 *System, i uint8) {
 	//skip next instruction if key i is not pressed
-	if chip8.PressedKey == nil || (chip8.PressedKey != nil && *chip8.PressedKey != i) {
-		chip8.nextOpcode()
+	if int(i) < len(chip8.Registers) {
+		expectedKey := chip8.Registers[i]
+		if chip8.PressedKey == nil || (chip8.PressedKey != nil && *chip8.PressedKey != expectedKey) {
+			chip8.nextOpcode()
+		}
 	}
 }
 

@@ -1,15 +1,14 @@
 package chip8
 
 import (
-	"bytes"
-	"errors"
-	"fmt"
-	"github.com/inancgumus/screen"
+	"github.com/pkg/errors"
 	"io"
 	"os"
 	"sync"
 	"time"
 )
+
+const TIMER_LAG = 16666667 //60Hz in nanoseconds
 
 type System struct {
 	RAM             [4 * 1024]uint8
@@ -47,42 +46,51 @@ func NewEmulator(romFilePath string) (*System, error) {
 				chip8.RAM[int(chip8.ProgramCounter)+index] = value
 			}
 		} else {
-			return nil, errors.New("cannot read ROM file bytes")
+			return nil, errors.Wrap(errors.New("cannot read ROM file bytes"), GetStackTraceAsString())
 		}
 	} else {
-		return nil, errors.New("cannot open ROM file")
+		return nil, errors.Wrap(errors.New("cannot open ROM file"), GetStackTraceAsString())
 	}
 
 	return &chip8, nil
 }
 
-func (chip8 *System) Start() {
+func (chip8 *System) Start() error {
+
 	go func() {
 		for {
-			chip8.render()
-			time.Sleep(1000000000)
+			chip8.CPUTick()
 		}
 	}()
 
-	for {
-		chip8.CPUTick()
-	}
-}
-
-func (chip8 *System) render() {
-	var buffer bytes.Buffer
-	for y := 0; y < len(chip8.Display[0]); y++ {
-		for x := 0; x < len(chip8.Display); x++ {
-			if chip8.Display[x][y] {
-				buffer.WriteString("▓▓▓")
-			} else {
-				buffer.WriteString("░░░")
+	go func() {
+		for {
+			chip8.Lock.Lock()
+			if chip8.DelayTimer > 0 {
+				chip8.DelayTimer--
 			}
+			chip8.Lock.Unlock()
+			//todo do actual beeping
+			//todo create README.md
+			time.Sleep(TIMER_LAG)
 		}
-		buffer.WriteString("\n")
+	}()
+
+	go func() {
+		for {
+			chip8.Lock.Lock()
+			if chip8.SoundTimer > 0 {
+				chip8.SoundTimer--
+			}
+			chip8.Lock.Unlock()
+			time.Sleep(TIMER_LAG)
+		}
+	}()
+
+	err := RunFrontend(chip8)
+	if err != nil {
+		return errors.Wrap(err, GetStackTraceAsString())
 	}
 
-	screen.Clear()
-	screen.MoveTopLeft()
-	fmt.Println(buffer.String())
+	return nil
 }

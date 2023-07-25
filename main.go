@@ -2,6 +2,7 @@ package main
 
 import (
 	"chip8/chip8"
+	"github.com/pkg/errors"
 	"os"
 )
 
@@ -12,11 +13,17 @@ func main() {
 	}
 
 	romFilePath := os.Args[1]
+	if _, err := os.Stat(romFilePath); errors.Is(err, os.ErrNotExist) {
+		panic("ROM file does not exist!")
+	}
+
 	emulator, err := chip8.NewEmulator(romFilePath)
 	if err != nil {
 		panic(err)
 	}
-	emulator.Start()
 
-	//https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
+	err = emulator.Start()
+	if err != nil {
+		panic(err)
+	}
 }
