@@ -1,0 +1,10 @@
+[package]
+name = "rust-chip8-emulator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand = "0.8.5"
+maplit2 = "1.0.5"
+sdl2 = "0.35.2"
+anyhow = "1.0.75"
