@@ -38,8 +38,8 @@ impl Frontend
     {
         let block_width = 15;
         let block_height = 15;
-        let window_width = block_width*(DISPLAY_WIDTH as u32);
-        let window_height = block_height *(DISPLAY_HEIGHT as u32);
+        let window_width = block_width * (DISPLAY_WIDTH as u32);
+        let window_height = block_height * (DISPLAY_HEIGHT as u32);
 
         let keyboard_mapping = hashmap!
         {
@@ -143,7 +143,7 @@ impl Frontend
                 }
                 Event::KeyUp { keycode : Some(keycode), .. } =>
                 {
-                    if let Some(index) = self.pressed_keys.iter().position(|pressed_key| *pressed_key ==keycode)
+                    if let Some(index) = self.pressed_keys.iter().position(|pressed_key| *pressed_key==keycode)
                     {
                         self.pressed_keys.remove(index);
                     }
