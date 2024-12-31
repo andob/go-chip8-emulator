@@ -1,6 +1,6 @@
 #include <fstream>
 #include <iostream>
-#include "Frontend.h"
+#include "frontend.h"
 #include "system.h"
 
 using namespace std;
@@ -32,7 +32,7 @@ int main(const int argc, char** argv)
         back_inserter(rom_file_bytes));
 
     unique_ptr<System> system(new System(rom_file_bytes));
-    const Frontend frontend(system);
+    const frontend frontend(system);
     frontend.run();
 
     return EXIT_SUCCESS;

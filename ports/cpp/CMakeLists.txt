@@ -14,8 +14,8 @@ add_executable(chip8 main.cpp
         font.cpp
         system.h
         system.cpp
-        Frontend.cpp
-        Frontend.h
+        frontend.cpp
+        frontend.h
 )
 
 target_link_libraries(chip8 ${SDL2_LIBRARY})
