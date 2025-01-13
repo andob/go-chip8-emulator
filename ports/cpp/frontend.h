@@ -7,7 +7,7 @@
 
 using namespace std;
 
-class frontend
+class Frontend
 {
     unique_ptr<System>& system;
 
@@ -17,7 +17,7 @@ class frontend
     EventHandlerResult handle_events() const;
 
 public:
-    explicit frontend(unique_ptr<System>& system) : system(system) {}
+    explicit Frontend(unique_ptr<System>& system) : system(system) {}
 
     void run() const;
 };

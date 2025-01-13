@@ -32,7 +32,7 @@ int main(const int argc, char** argv)
         back_inserter(rom_file_bytes));
 
     unique_ptr<System> system(new System(rom_file_bytes));
-    const frontend frontend(system);
+    const Frontend frontend(system);
     frontend.run();
 
     return EXIT_SUCCESS;

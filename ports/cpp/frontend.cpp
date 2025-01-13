@@ -13,7 +13,7 @@ using namespace std;
     return; \
 }
 
-void frontend::run() const
+void Frontend::run() const
 {
     constexpr u32 window_width = BLOCK_WIDTH * DISPLAY_WIDTH;
     constexpr u32 window_height = BLOCK_HEIGHT * DISPLAY_HEIGHT;
@@ -50,7 +50,7 @@ void frontend::run() const
     }
 }
 
-void frontend::render_frame(SDL_Renderer* renderer) const
+void Frontend::render_frame(SDL_Renderer* renderer) const
 {
     i32 error = SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
     HandleSDLError(error, SDL_SetRenderDrawColor);
@@ -76,7 +76,7 @@ void frontend::render_frame(SDL_Renderer* renderer) const
     SDL_Delay(17);
 }
 
-frontend::EventHandlerResult frontend::handle_events() const
+Frontend::EventHandlerResult Frontend::handle_events() const
 {
     SDL_Event event;
     while (SDL_PollEvent(&event))
