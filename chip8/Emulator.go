@@ -1,10 +1,11 @@
 package chip8
 
 import (
-	"github.com/pkg/errors"
 	"io"
 	"os"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 type System struct {

@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 rand = "0.9.1"
 maplit2 = "1.0.5"
-sdl2 = "0.37.0"
+sdl2 = "0.38.0"
 anyhow = "1.0.75"

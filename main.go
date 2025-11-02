@@ -2,8 +2,9 @@ package main
 
 import (
 	"chip8/chip8"
-	"github.com/pkg/errors"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
 func main() {
