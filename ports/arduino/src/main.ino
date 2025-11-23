@@ -55,16 +55,20 @@ void setup() {
     randomSeed(analogRead(A0));
 
     Serial.begin(baudRate);
-
-    unsigned long startTime = millis();
-    chip8System.vblank();
-    unsigned long stopTime = millis();
-    Serial.println(stopTime - startTime);
-    Serial.println(getFreeRAM());
 }
 
 //todo implement menu
 //todo implement LCD frontend
 //todo implement joystick
 //todo implement buzzer (on soundTimer)
-void loop() {}
+void loop() {
+    unsigned long startTime = millis();
+    chip8System.vblank();
+    unsigned long stopTime = millis();
+
+    Serial.print("Delta time: ");
+    Serial.print(stopTime - startTime);
+    Serial.print(" Consumed RAM: ");
+    Serial.print(getFreeRAM());
+    Serial.print('\n');
+}

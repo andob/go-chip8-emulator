@@ -10,4 +10,6 @@
 #define displayWidth 64
 #define displayHeight 32
 
+#define nofBitsInByte 8
+
 #endif

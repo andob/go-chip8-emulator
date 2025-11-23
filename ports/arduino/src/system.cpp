@@ -118,7 +118,7 @@ void System::cpuTick() {
 void System::cls() {
     for (uint8_t i = 0; i < displayWidth; i++) {
         for (uint8_t j = 0; j < displayHeight; j++) {
-            this->display[i][j] = false;
+            this->display.setPixel(i, j, false);
         }
     }
 }
@@ -295,9 +295,9 @@ void System::draw(uint8_t ix, uint8_t iy, uint8_t height) {
             for (int8_t bitIndex = 7; bitIndex >= 0; bitIndex--) {
                 const int32_t nx = (x + (7 - bitIndex)) % displayWidth;
                 const int32_t bit = ((spriteByte & (0x00000001 << bitIndex)) >> bitIndex) == 1;
-                const bool oldValue = this->display[nx][ny];
+                const bool oldValue = this->display.getPixel(nx, ny);
                 const bool newValue = bit != oldValue;
-                this->display[nx][ny] = newValue;
+                this->display.setPixel(nx, ny, newValue);
 
                 //pixel turned off
                 if (oldValue && !newValue) {
@@ -439,7 +439,7 @@ void System::nop(uint8_t opcode) {
 }
 
 bool System::getPixel(const uint8_t x, const uint8_t y) const {
-    return x < displayWidth && y < displayHeight ? display[x][y] : false;
+    return this->display.getPixel(x, y);
 }
 
 void System::vblank() {

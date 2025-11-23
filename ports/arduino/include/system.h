@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "constants.h"
+#include "display.h"
 #include "stack.h"
 
 class System {
@@ -14,7 +15,7 @@ class System {
     Stack stack;
     uint8_t delayTimer;
     uint8_t soundTimer;
-    bool display[displayWidth][displayHeight];
+    Display display;
     bool isKeyPressed;
     uint8_t pressedKey;
 
