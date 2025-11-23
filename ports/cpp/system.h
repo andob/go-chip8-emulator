@@ -5,7 +5,6 @@
 #include <functional>
 #include <stack>
 #include <vector>
-
 #include "constants.h"
 #include "font.h"
 
@@ -13,68 +12,68 @@ using namespace std;
 
 class System
 {
-    array<u8, RAM_SIZE> ram;
-    array<u8, REGISTERS_SIZE> registers;
-    array<u8, REGISTERS_SIZE> registers_backup;
-    u16 program_counter;
-    u16 index;
-    stack<u16> _stack;
-    u8 delay_timer;
-    u8 sound_timer;
+    array<uint8_t, RAM_SIZE> ram;
+    array<uint8_t, REGISTERS_SIZE> registers;
+    array<uint8_t, REGISTERS_SIZE> registers_backup;
+    uint16_t program_counter;
+    uint16_t index;
+    stack<uint16_t> _stack;
+    uint8_t delay_timer;
+    uint8_t sound_timer;
     array<array<bool, DISPLAY_HEIGHT>, DISPLAY_WIDTH> display;
     Font font;
     bool is_key_pressed;
-    u8 pressed_key;
+    uint8_t pressed_key;
 
-    u16 next_opcode();
+    uint16_t next_opcode();
     void cpu_tick();
 
     void cls();
     void ret();
-    void jp1(u16 pointer);
-    void call(u16 pointer);
-    void se1(u8 i, u8 value);
-    void sne1(u8 i, u8 value);
-    void se2(u8 i, u8 j);
-    void ld1(u8 i, u8 value);
-    void add1(u8 i, u8 value);
-    void ld2(u8 i, u8 j);
-    void _or(u8 i, u8 j);
-    void _and(u8 i, u8 j);
-    void _xor(u8 i, u8 j);
-    void add2(u8 i, u8 j);
-    void sub(u8 i, u8 j);
-    void subn(u8 i, u8 j);
-    void shr(u8 i);
-    void shl(u8 i);
-    void sne2(u8 i, u8 j);
-    void ld3(u16 value);
-    void jp2(u16 pointer);
-    void rnd(u8 i, u8 value);
-    void draw(u8 ix, u8 iy, u8 height);
-    void skp(u8 i);
-    void sknp(u8 i);
-    void ld4(u8 i);
-    void ldk(u8 i);
-    void lddt(u8 i);
-    void ldst(u8 i);
-    void add3(u8 i);
-    void ldf(u8 i);
-    void ldb(u8 i);
-    void reg2mem(u8 amount);
-    void mem2reg(u8 amount);
-    void reg2backup(u8 amount);
-    void backup2reg(u8 amount);
+    void jp1(uint16_t pointer);
+    void call(uint16_t pointer);
+    void se1(uint8_t i, uint8_t value);
+    void sne1(uint8_t i, uint8_t value);
+    void se2(uint8_t i, uint8_t j);
+    void ld1(uint8_t i, uint8_t value);
+    void add1(uint8_t i, uint8_t value);
+    void ld2(uint8_t i, uint8_t j);
+    void _or(uint8_t i, uint8_t j);
+    void _and(uint8_t i, uint8_t j);
+    void _xor(uint8_t i, uint8_t j);
+    void add2(uint8_t i, uint8_t j);
+    void sub(uint8_t i, uint8_t j);
+    void subn(uint8_t i, uint8_t j);
+    void shr(uint8_t i);
+    void shl(uint8_t i);
+    void sne2(uint8_t i, uint8_t j);
+    void ld3(uint16_t value);
+    void jp2(uint16_t pointer);
+    void rnd(uint8_t i, uint8_t value);
+    void draw(uint8_t ix, uint8_t iy, uint8_t height);
+    void skp(uint8_t i);
+    void sknp(uint8_t i);
+    void ld4(uint8_t i);
+    void ldk(uint8_t i);
+    void lddt(uint8_t i);
+    void ldst(uint8_t i);
+    void add3(uint8_t i);
+    void ldf(uint8_t i);
+    void ldb(uint8_t i);
+    void reg2mem(uint8_t amount);
+    void mem2reg(uint8_t amount);
+    void reg2backup(uint8_t amount);
+    void backup2reg(uint8_t amount);
 
 public:
-    explicit System(const vector<u8>& rom_bytes);
+    explicit System(const vector<uint8_t>& rom_bytes);
 
-    void iterate_display(const function<void(u8, u8, bool)>& callback) const;
+    void iterate_display(const function<void(uint8_t, uint8_t, bool)>& callback) const;
 
     void vblank();
 
-    void notify_on_key_down(u8 key);
-    void notify_on_key_up(u8 key);
+    void notify_on_key_down(uint8_t key);
+    void notify_on_key_up(uint8_t key);
 };
 
-#endif //SYSTEM_H
+#endif

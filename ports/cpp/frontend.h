@@ -22,4 +22,4 @@ public:
     void run() const;
 };
 
-#endif //FRONTEND_H
+#endif

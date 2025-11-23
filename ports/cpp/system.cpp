@@ -1,8 +1,7 @@
 #include "system.h"
-#include <cstdlib>
 #include <iostream>
 
-System::System(const vector<u8>& rom_bytes) : font(Font::get_default())
+System::System(const vector<uint8_t>& rom_bytes) : font(Font::get_default())
 {
     //initialise fields
     this->ram.fill(0);
@@ -16,9 +15,9 @@ System::System(const vector<u8>& rom_bytes) : font(Font::get_default())
     for (FontCharacter character : this->font.get_characters())
     {
         auto character_data = character.get_data();
-        for (u16 index = 0; index < character_data.size(); index++)
+        for (uint16_t index = 0; index < character_data.size(); index++)
         {
-            const u16 address = character.get_address() + index;
+            const uint16_t address = character.get_address() + index;
             this->ram[address % RAM_SIZE] = character_data[index];
             index++;
         }
@@ -27,7 +26,7 @@ System::System(const vector<u8>& rom_bytes) : font(Font::get_default())
     //load ROM into RAM
     this->program_counter = 0x200; //load ROM into RAM index 200
 
-    for (u16 index = 0; index < rom_bytes.size(); index++)
+    for (uint16_t index = 0; index < rom_bytes.size(); index++)
     {
         this->ram[this->program_counter + index] = rom_bytes[index];
     }
@@ -36,12 +35,12 @@ System::System(const vector<u8>& rom_bytes) : font(Font::get_default())
     this->cls();
 }
 
-u16 System::next_opcode()
+uint16_t System::next_opcode()
 {
     if (this->program_counter+1 < RAM_SIZE)
     {
-        const u16 first = this->ram[this->program_counter];
-        const u16 second = this->ram[this->program_counter+1];
+        const uint16_t first = this->ram[this->program_counter];
+        const uint16_t second = this->ram[this->program_counter+1];
         this->program_counter += 2;
         return first << 8 | second;
     }
@@ -52,7 +51,7 @@ u16 System::next_opcode()
 void System::cpu_tick()
 {
     //http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
-    const u16 opcode = this->next_opcode();
+    const uint16_t opcode = this->next_opcode();
 
     if (opcode == 0x00E0) this->cls();
     else if (opcode == 0x00EE) this->ret();
@@ -95,9 +94,9 @@ void System::cpu_tick()
 
 void System::cls()
 {
-    for (u8 i = 0; i < this->display.size(); i++)
+    for (uint8_t i = 0; i < this->display.size(); i++)
     {
-        for (u8 j = 0; j < this->display[i].size(); j++)
+        for (uint8_t j = 0; j < this->display[i].size(); j++)
         {
             this->display[i][j] = false;
         }
@@ -114,20 +113,20 @@ void System::ret()
     }
 }
 
-void System::jp1(const u16 pointer)
+void System::jp1(const uint16_t pointer)
 {
     //jump to address (goto)
     this->program_counter = pointer;
 }
 
-void System::call(const u16 pointer)
+void System::call(const uint16_t pointer)
 {
     //call subroutine
     this->_stack.push(this->program_counter);
     this->program_counter = pointer;
 }
 
-void System::se1(u8 i, u8 value)
+void System::se1(uint8_t i, uint8_t value)
 {
     //skip next instruction if register == value
     if (i < REGISTERS_SIZE && this->registers[i] == value)
@@ -136,7 +135,7 @@ void System::se1(u8 i, u8 value)
     }
 }
 
-void System::sne1(u8 i, u8 value)
+void System::sne1(uint8_t i, uint8_t value)
 {
     //skip next instruction if register != value
     if (i < REGISTERS_SIZE && this->registers[i] != value)
@@ -145,7 +144,7 @@ void System::sne1(u8 i, u8 value)
     }
 }
 
-void System::se2(u8 i, u8 j)
+void System::se2(uint8_t i, uint8_t j)
 {
     //skip next instruction if register1 == register2
     if (i < REGISTERS_SIZE && j < REGISTERS_SIZE)
@@ -157,7 +156,7 @@ void System::se2(u8 i, u8 j)
     }
 }
 
-void System::ld1(u8 i, u8 value)
+void System::ld1(uint8_t i, uint8_t value)
 {
     //load value into register
     if (i < REGISTERS_SIZE)
@@ -166,19 +165,19 @@ void System::ld1(u8 i, u8 value)
     }
 }
 
-void System::add1(u8 i, u8 value)
+void System::add1(uint8_t i, uint8_t value)
 {
     //add: Ri = Ri + value
     if (i < REGISTERS_SIZE)
     {
-        const u16 result = static_cast<u16>(this->registers[i]) + value;
+        const uint16_t result = static_cast<uint16_t>(this->registers[i]) + value;
 
         this->registers[i] = result & 0xFF;
         this->registers[0x0F] = result > 0xFF ? 1 : 0;
     }
 }
 
-void System::ld2(u8 i, u8 j)
+void System::ld2(uint8_t i, uint8_t j)
 {
     //store the value of register2 into register1
     if (i < REGISTERS_SIZE && j < REGISTERS_SIZE)
@@ -187,7 +186,7 @@ void System::ld2(u8 i, u8 j)
     }
 }
 
-void System::_or(u8 i, u8 j)
+void System::_or(uint8_t i, uint8_t j)
 {
     //bitwise or: Ri = Ri | Rj
     if (i < REGISTERS_SIZE && j < REGISTERS_SIZE)
@@ -196,7 +195,7 @@ void System::_or(u8 i, u8 j)
     }
 }
 
-void System::_and(u8 i, u8 j)
+void System::_and(uint8_t i, uint8_t j)
 {
     //bitwise and: Ri = Ri & Rj
     if (i < REGISTERS_SIZE && j < REGISTERS_SIZE)
@@ -205,7 +204,7 @@ void System::_and(u8 i, u8 j)
     }
 }
 
-void System::_xor(u8 i, u8 j)
+void System::_xor(uint8_t i, uint8_t j)
 {
     //bitwise xor: Ri = Ri ^ Rj
     if (i < REGISTERS_SIZE && j < REGISTERS_SIZE)
@@ -214,43 +213,43 @@ void System::_xor(u8 i, u8 j)
     }
 }
 
-void System::add2(u8 i, u8 j)
+void System::add2(uint8_t i, uint8_t j)
 {
     //add: Ri = Ri + Rj
     if (i < REGISTERS_SIZE && j < REGISTERS_SIZE)
     {
-        const u16 result = static_cast<u16>(this->registers[i]) + this->registers[j];
+        const uint16_t result = static_cast<uint16_t>(this->registers[i]) + this->registers[j];
 
         this->registers[i] = result & 0xFF;
         this->registers[0x0F] = result > 0xFF ? 1 : 0;
     }
 }
 
-void System::sub(u8 i, u8 j)
+void System::sub(uint8_t i, uint8_t j)
 {
     //substract: Ri = Ri - Rj
     if (i < REGISTERS_SIZE && j < REGISTERS_SIZE)
     {
-        const i16 result = static_cast<i16>(this->registers[i]) - this->registers[j];
+        const int16_t result = static_cast<int16_t>(this->registers[i]) - this->registers[j];
 
         this->registers[i] = result & 0xFF;
         this->registers[0x0F] = result < 0 ? 0 : 1;
     }
 }
 
-void System::subn(u8 i, u8 j)
+void System::subn(uint8_t i, uint8_t j)
 {
     //substract: Ri = Rj - Ri
     if (i < REGISTERS_SIZE && j < REGISTERS_SIZE)
     {
-        const i16 result = static_cast<i16>(this->registers[j]) - this->registers[i];
+        const int16_t result = static_cast<int16_t>(this->registers[j]) - this->registers[i];
 
         this->registers[i] = result & 0xFF;
         this->registers[0x0F] = result < 0 ? 0 : 1;
     }
 }
 
-void System::shr(u8 i)
+void System::shr(uint8_t i)
 {
     //shift right: Ri = Ri >> 1
     if (i < REGISTERS_SIZE)
@@ -260,7 +259,7 @@ void System::shr(u8 i)
     }
 }
 
-void System::shl(u8 i)
+void System::shl(uint8_t i)
 {
     //shift left: Ri = Ri << 1
     if (i < REGISTERS_SIZE)
@@ -270,7 +269,7 @@ void System::shl(u8 i)
     }
 }
 
-void System::sne2(u8 i, u8 j)
+void System::sne2(uint8_t i, uint8_t j)
 {
     //skip next instruction if Ri != Rj
     if (i < REGISTERS_SIZE && j < REGISTERS_SIZE)
@@ -282,44 +281,44 @@ void System::sne2(u8 i, u8 j)
     }
 }
 
-void System::ld3(u16 value)
+void System::ld3(uint16_t value)
 {
     //store value into index register
     this->index = value;
 }
 
-void System::jp2(u16 pointer)
+void System::jp2(uint16_t pointer)
 {
     //jump to address (goto) R0+pointer
-    this->program_counter = static_cast<u16>(this->registers[0]) + pointer;
+    this->program_counter = static_cast<uint16_t>(this->registers[0]) + pointer;
 }
 
-void System::rnd(u8 i, u8 value)
+void System::rnd(uint8_t i, uint8_t value)
 {
     //generate random number: Rx = random & value
-    const u8 result = (rand() % 0x100) & value;
+    const uint8_t result = (rand() % 0x100) & value;
     this->registers[i] = result;
 }
 
-void System::draw(u8 ix, u8 iy, u8 height)
+void System::draw(uint8_t ix, uint8_t iy, uint8_t height)
 {
     if (ix < REGISTERS_SIZE && iy < REGISTERS_SIZE)
     {
         this->registers[0x0F] = 0x00;
 
-        const i32 x = static_cast<i32>(this->registers[ix]) % DISPLAY_WIDTH;
-        const i32 y = static_cast<i32>(this->registers[iy]) % DISPLAY_HEIGHT;
+        const int32_t x = static_cast<int32_t>(this->registers[ix]) % DISPLAY_WIDTH;
+        const int32_t y = static_cast<int32_t>(this->registers[iy]) % DISPLAY_HEIGHT;
 
-        for (u32 row = 0; row < height; row++)
+        for (int32_t row = 0; row < height; row++)
         {
-            const i32 ny = (y + row) % DISPLAY_HEIGHT;
-            const i32 index = (static_cast<i32>(this->index) + row) % RAM_SIZE;
-            const i32 sprite_octet = this->ram[index];
+            const int32_t ny = (y + row) % DISPLAY_HEIGHT;
+            const int32_t index = (static_cast<int32_t>(this->index) + row) % RAM_SIZE;
+            const int32_t sprite_octet = this->ram[index];
 
-            for (i8 bit_index = 7; bit_index >= 0; bit_index--)
+            for (int8_t bit_index = 7; bit_index >= 0; bit_index--)
             {
-                const i32 nx = (x + (7 - bit_index)) % DISPLAY_WIDTH;
-                const i32 bit = ((sprite_octet & (0x00000001 << bit_index)) >> bit_index) == 1;
+                const int32_t nx = (x + (7 - bit_index)) % DISPLAY_WIDTH;
+                const int32_t bit = ((sprite_octet & (0x00000001 << bit_index)) >> bit_index) == 1;
                 const bool old_value = this->display[nx][ny];
                 const bool new_value = bit != old_value;
                 this->display[nx][ny] = new_value;
@@ -332,12 +331,12 @@ void System::draw(u8 ix, u8 iy, u8 height)
     }
 }
 
-void System::skp(u8 i)
+void System::skp(uint8_t i)
 {
     //skip next instruction if key i is pressed
     if (i < REGISTERS_SIZE)
     {
-        const u8 expected_key = this->registers[i];
+        const uint8_t expected_key = this->registers[i];
         if (this->is_key_pressed && this->pressed_key == expected_key)
         {
             this->next_opcode();
@@ -345,12 +344,12 @@ void System::skp(u8 i)
     }
 }
 
-void System::sknp(u8 i)
+void System::sknp(uint8_t i)
 {
     //skip next instruction if key i is not pressed
     if (i < REGISTERS_SIZE)
     {
-        const u8 expected_key = this->registers[i];
+        const uint8_t expected_key = this->registers[i];
         if (this->is_key_pressed && this->pressed_key != expected_key)
         {
             this->next_opcode();
@@ -362,7 +361,7 @@ void System::sknp(u8 i)
     }
 }
 
-void System::ld4(u8 i)
+void System::ld4(uint8_t i)
 {
     //set Ri = delay timer
     if (i < REGISTERS_SIZE)
@@ -371,7 +370,7 @@ void System::ld4(u8 i)
     }
 }
 
-void System::ldk(u8 i)
+void System::ldk(uint8_t i)
 {
     //block until a key is pressed, and store the key into Ri
     if (i < REGISTERS_SIZE)
@@ -382,7 +381,7 @@ void System::ldk(u8 i)
     }
 }
 
-void System::lddt(u8 i)
+void System::lddt(uint8_t i)
 {
     //set delay timer = Ri
     if (i < REGISTERS_SIZE)
@@ -391,7 +390,7 @@ void System::lddt(u8 i)
     }
 }
 
-void System::ldst(u8 i)
+void System::ldst(uint8_t i)
 {
     //set sound timer = Ri
     if (i < REGISTERS_SIZE)
@@ -400,24 +399,24 @@ void System::ldst(u8 i)
     }
 }
 
-void System::add3(u8 i)
+void System::add3(uint8_t i)
 {
     //set I = I + Ri
     if (i < REGISTERS_SIZE)
     {
-        const u32 result = static_cast<u32>(this->registers[i]) + this->index;
+        const uint32_t result = static_cast<uint32_t>(this->registers[i]) + this->index;
 
         this->index = result & 0xFFFF;
         this->registers[0x0F] = result > 0x00FF ? 1 : 0;
     }
 }
 
-void System::ldf(u8 i)
+void System::ldf(uint8_t i)
 {
     //location of sprite of digit from font
     if (i < REGISTERS_SIZE)
     {
-        const u8 char_index = this->registers[i];
+        const uint8_t char_index = this->registers[i];
         if (char_index < NOF_CHARS_IN_FONT)
         {
             this->index = this->font.get_characters()[char_index].get_address();
@@ -425,26 +424,26 @@ void System::ldf(u8 i)
     }
 }
 
-void System::ldb(u8 i)
+void System::ldb(uint8_t i)
 {
     //store binary coded decimal representation of Ri in RAM at I,I+1,I+2
     if (i < REGISTERS_SIZE && this->index+2 < RAM_SIZE)
     {
-        const u8 value = this->registers[i];
+        const uint8_t value = this->registers[i];
         this->ram[this->index+0] = (value / 100) % 10;
         this->ram[this->index+1] = (value / 10) % 10;
         this->ram[this->index+2] = value % 10;
     }
 }
 
-void System::reg2mem(u8 amount)
+void System::reg2mem(uint8_t amount)
 {
     //store registers R0..R_amount into RAM at location I+0..I+amount
     if (amount < REGISTERS_SIZE)
     {
-        for (u8 i = 0; i <= amount; i++)
+        for (uint8_t i = 0; i <= amount; i++)
         {
-            const u16 pointer = this->index + i;
+            const uint16_t pointer = this->index + i;
             if (pointer < RAM_SIZE)
             {
                 this->ram[pointer] = this->registers[i];
@@ -453,14 +452,14 @@ void System::reg2mem(u8 amount)
     }
 }
 
-void System::mem2reg(u8 amount)
+void System::mem2reg(uint8_t amount)
 {
     //store RAM at location I+0..I+amount into registers R0..R_amount
     if (amount < REGISTERS_SIZE)
     {
-        for (u8 i = 0; i <= amount; i++)
+        for (uint8_t i = 0; i <= amount; i++)
         {
-            const u16 pointer = this->index + i;
+            const uint16_t pointer = this->index + i;
             if (pointer < RAM_SIZE)
             {
                 this->registers[i] = this->ram[pointer];
@@ -469,35 +468,35 @@ void System::mem2reg(u8 amount)
     }
 }
 
-void System::reg2backup(u8 amount)
+void System::reg2backup(uint8_t amount)
 {
     //store registers R0..R_amount into backup
     if (amount < REGISTERS_SIZE)
     {
-        for (u8 i = 0; i <= amount; i++)
+        for (uint8_t i = 0; i <= amount; i++)
         {
             this->registers_backup[i] = this->registers[i];
         }
     }
 }
 
-void System::backup2reg(u8 amount)
+void System::backup2reg(uint8_t amount)
 {
     //restore registers R0..R_amount from backup
     if (amount < REGISTERS_SIZE)
     {
-        for (u8 i = 0; i <= amount; i++)
+        for (uint8_t i = 0; i <= amount; i++)
         {
             this->registers[i] = this->registers_backup[i];
         }
     }
 }
 
-void System::iterate_display(const function<void(u8, u8, bool)>& callback) const
+void System::iterate_display(const function<void(uint8_t, uint8_t, bool)>& callback) const
 {
-    for (u8 x = 0; x < DISPLAY_WIDTH; x++)
+    for (uint8_t x = 0; x < DISPLAY_WIDTH; x++)
     {
-        for (u8 y = 0; y < DISPLAY_HEIGHT; y++)
+        for (uint8_t y = 0; y < DISPLAY_HEIGHT; y++)
         {
             callback(x, y, display[x][y]);
         }
@@ -506,7 +505,7 @@ void System::iterate_display(const function<void(u8, u8, bool)>& callback) const
 
 void System::vblank()
 {
-    for (u32 i = 0; i < 10000; i++)
+    for (uint32_t i = 0; i < 10000; i++)
     {
         this->cpu_tick();
     }
@@ -522,13 +521,13 @@ void System::vblank()
     }
 }
 
-void System::notify_on_key_down(const u8 key)
+void System::notify_on_key_down(const uint8_t key)
 {
     this->is_key_pressed = true;
     this->pressed_key = key;
 }
 
-void System::notify_on_key_up(const u8 key)
+void System::notify_on_key_up(const uint8_t key)
 {
     this->is_key_pressed = false;
     this->pressed_key = key;

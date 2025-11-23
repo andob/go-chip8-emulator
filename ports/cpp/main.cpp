@@ -25,7 +25,7 @@ int main(const int argc, char** argv)
     const size_t rom_file_length = rom_file_stream.tellg();
     rom_file_stream.seekg(0, ios_base::beg);
 
-    vector<u8> rom_file_bytes;
+    vector<uint8_t> rom_file_bytes;
     rom_file_bytes.reserve(rom_file_length);
     copy( istreambuf_iterator(rom_file_stream),
         istreambuf_iterator<char>(),

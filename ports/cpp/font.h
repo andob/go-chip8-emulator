@@ -11,17 +11,17 @@ using namespace std;
 
 class FontCharacter
 {
-    u8 name;
-    u16 _address;
-    array<u8, NOF_BYTES_IN_FONT_CHAR> data;
+    uint8_t name;
+    uint16_t _address;
+    array<uint8_t, NOF_BYTES_IN_FONT_CHAR> data;
 
 public:
-    FontCharacter(const u8 name, const u16 address, const array<u8, NOF_BYTES_IN_FONT_CHAR> &data)
+    FontCharacter(const uint8_t name, const uint16_t address, const array<uint8_t, NOF_BYTES_IN_FONT_CHAR> &data)
         : name(name), _address(address), data(data) {}
 
-    u8 get_name() const { return name; }
-    u16 get_address() const { return _address; }
-    array<u8, NOF_BYTES_IN_FONT_CHAR> get_data() const { return data; }
+    uint8_t get_name() const { return name; }
+    uint16_t get_address() const { return _address; }
+    array<uint8_t, NOF_BYTES_IN_FONT_CHAR> get_data() const { return data; }
 };
 
 class Font
@@ -36,4 +36,4 @@ public:
     static Font get_default();
 };
 
-#endif //FONT_H
+#endif

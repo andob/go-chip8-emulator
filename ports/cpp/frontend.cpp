@@ -15,10 +15,10 @@ using namespace std;
 
 void Frontend::run() const
 {
-    constexpr u32 window_width = BLOCK_WIDTH * DISPLAY_WIDTH;
-    constexpr u32 window_height = BLOCK_HEIGHT * DISPLAY_HEIGHT;
+    constexpr uint32_t window_width = BLOCK_WIDTH * DISPLAY_WIDTH;
+    constexpr uint32_t window_height = BLOCK_HEIGHT * DISPLAY_HEIGHT;
 
-    i32 error = SDL_Init(SDL_INIT_VIDEO);
+    int32_t error = SDL_Init(SDL_INIT_VIDEO);
     HandleSDLError(error, SDL_Init);
 
     SDL_Window* window = SDL_CreateWindow(/*title*/ "CHIP-8",
@@ -52,15 +52,15 @@ void Frontend::run() const
 
 void Frontend::render_frame(SDL_Renderer* renderer) const
 {
-    i32 error = SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+    int32_t error = SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
     HandleSDLError(error, SDL_SetRenderDrawColor);
 
     error = SDL_RenderClear(renderer);
     HandleSDLError(error, SDL_RenderClear);
 
-    this->system->iterate_display([renderer](const u8 x, const u8 y, const bool pixel)
+    this->system->iterate_display([renderer](const uint8_t x, const uint8_t y, const bool pixel)
     {
-        i32 error = SDL_SetRenderDrawColor(renderer, 0x00, pixel ? 0xFF : 0x00, 0x00, 0xFF);
+        int32_t error = SDL_SetRenderDrawColor(renderer, 0x00, pixel ? 0xFF : 0x00, 0x00, 0xFF);
         HandleSDLError(error, SDL_SetRenderDrawColor);
 
         SDL_Rect rectangle;
@@ -88,7 +88,7 @@ Frontend::EventHandlerResult Frontend::handle_events() const
 
         if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
         {
-            u8 key = 0x00;
+            uint8_t key = 0x00;
             switch (event.key.keysym.sym)
             {
                 case SDLK_KP_1: key = 0x01; break;
