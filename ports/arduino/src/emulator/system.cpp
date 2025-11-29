@@ -1,7 +1,9 @@
-#include "system.h"
+#include "emulator/system.h"
+#include "emulator/font.h"
 #include <Arduino.h>
 
-#include "font.h"
+#define enableOpcodeLogging
+#undef enableOpcodeLogging
 
 System::System(const uint8_t* romBytes, const size_t romLength) {
     //initialise fields
@@ -94,25 +96,9 @@ void System::cpuTick() {
     else if ((opcode>>0xC) == 0xF && (opcode&0xFF) == 0x85) this->backup2reg(((opcode>>8)&0x0F));
     else this->nop(opcode);
 
-    //todo remove logging
-    /*char buffer[5];
-    sprintf(buffer, "%04X", opcode);
-    Serial.print(buffer);
-    Serial.print(' ');
-
-    for (int i = 0; i < registersSize; i++) {
-        sprintf(buffer, "%02X", registers[i]);
-        Serial.print(buffer);
-        Serial.print(' ');
-    }
-
-    sprintf(buffer, "%04X", programCounter);
-    Serial.print(buffer);
-    Serial.print(' ');
-
-    sprintf(buffer, "%04X", index);
-    Serial.print(buffer);
-    Serial.print('\n');*/
+    #ifdef enableOpcodeLogging
+    this->log(opcode);
+    #endif
 }
 
 void System::cls() {
@@ -438,11 +424,38 @@ void System::nop(uint8_t opcode) {
     Serial.print(" not implemented!\n");
 }
 
+void System::log(const uint8_t opcode) const {
+    char buffer[5];
+    sprintf(buffer, "%04X", opcode);
+    Serial.print(buffer);
+    Serial.print(' ');
+
+    for (int i = 0; i < registersSize; i++) {
+        sprintf(buffer, "%02X", registers[i]);
+        Serial.print(buffer);
+        Serial.print(' ');
+    }
+
+    sprintf(buffer, "%04X", programCounter);
+    Serial.print(buffer);
+    Serial.print(' ');
+
+    sprintf(buffer, "%04X", index);
+    Serial.print(buffer);
+    Serial.print('\n');
+}
+
+bool System::wasPixelChanged(const uint8_t x, const uint8_t y) const {
+    return this->display.getPixel(x, y) != this->oldDisplay.getPixel(x, y);
+}
+
 bool System::getPixel(const uint8_t x, const uint8_t y) const {
     return this->display.getPixel(x, y);
 }
 
 void System::vblank() {
+    this->oldDisplay.copyFrom(&this->display);
+
     for (uint32_t i = 0; i < 10000; i++) {
         this->cpuTick();
     }

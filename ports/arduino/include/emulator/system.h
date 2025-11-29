@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include "constants.h"
 #include "display.h"
-#include "stack.h"
+#include "emulator/stack.h"
 
 class System {
     uint8_t ram[ramSize];
@@ -16,6 +16,7 @@ class System {
     uint8_t delayTimer;
     uint8_t soundTimer;
     Display display;
+    Display oldDisplay;
     bool isKeyPressed;
     uint8_t pressedKey;
 
@@ -59,10 +60,12 @@ class System {
     void reg2backup(uint8_t amount);
     void backup2reg(uint8_t amount);
     static void nop(uint8_t opcode);
+    void log(uint8_t opcode) const;
 
 public:
     System(const uint8_t* romBytes, size_t romLength);
 
+    bool wasPixelChanged(uint8_t x, uint8_t y) const;
     bool getPixel(uint8_t x, uint8_t y) const;
 
     void vblank();

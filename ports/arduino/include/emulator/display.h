@@ -1,7 +1,7 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
-#include "constants.h"
 #include <stdint.h>
+#include "emulator/constants.h"
 
 class Display {
 private:
@@ -12,6 +12,8 @@ public:
 
     bool getPixel(uint8_t x, uint8_t y) const;
     void setPixel(uint8_t x, uint8_t y, bool value);
+
+    void copyFrom(const Display* anotherDisplay);
 };
 
 #endif

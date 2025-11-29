@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "stack.h"
+#include "emulator/stack.h"
 
 bool Stack::isEmpty() const {
     return pointer == 0;

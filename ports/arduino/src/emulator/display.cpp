@@ -1,4 +1,4 @@
-#include "display.h"
+#include "emulator/display.h"
 
 bool Display::getPixel(const uint8_t x, const uint8_t y) const {
     if (x < displayWidth && y < displayHeight) {
@@ -16,5 +16,13 @@ void Display::setPixel(const uint8_t x, const uint8_t y, const bool value) {
         const uint8_t bitIndex = y % nofBitsInByte;
         const uint8_t newData = value ? data | (1 << bitIndex) : data & ~(1 << bitIndex);
         pixels[x][y / nofBitsInByte] = newData;
+    }
+}
+
+void Display::copyFrom(const Display* anotherDisplay) {
+    for (int x = 0; x < displayWidth; x++) {
+        for (int y = 0; y < displayHeight / nofBitsInByte; y++) {
+            pixels[x][y] = anotherDisplay->pixels[x][y];
+        }
     }
 }
