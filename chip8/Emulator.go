@@ -19,7 +19,7 @@ type System struct {
 	SoundTimer      uint8
 	Display         [64][32]bool
 	Font            Font
-	PressedKey      *uint8
+	Keys            [16]bool
 	Lock            sync.RWMutex
 }
 

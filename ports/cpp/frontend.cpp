@@ -91,10 +91,10 @@ Frontend::EventHandlerResult Frontend::handle_events() const
             uint8_t key = 0x00;
             switch (event.key.keysym.sym)
             {
-                case SDLK_KP_1: key = 0x01; break;
-                case SDLK_KP_2: case SDLK_UP: key = 0x02; break;
-                case SDLK_KP_3: key = 0x03; break;
-                case SDLK_KP_4: key = 0x0C; break;
+                case SDLK_1: key = 0x01; break;
+                case SDLK_2: case SDLK_UP: key = 0x02; break;
+                case SDLK_3: key = 0x03; break;
+                case SDLK_4: key = 0x0C; break;
                 case SDLK_q: case SDLK_LEFT: key = 0x04; break;
                 case SDLK_w: case SDLK_SPACE: key = 0x05; break;
                 case SDLK_e: case SDLK_RIGHT: key = 0x06; break;

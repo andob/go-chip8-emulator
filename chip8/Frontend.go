@@ -2,49 +2,28 @@ package chip8
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/pkg/errors"
 	"golang.org/x/image/colornames"
 )
 
 type Frontend struct {
-	blockWidth           int
-	blockHeight          int
-	block                *ebiten.Image
-	chip8                *System
-	windowWidth          int
-	windowHeight         int
-	keyboardMapping      map[ebiten.Key]int
-	previouslyPressedKey *ebiten.Key
+	blockWidth      int
+	blockHeight     int
+	block           *ebiten.Image
+	chip8           *System
+	windowWidth     int
+	windowHeight    int
+	keyboardMapping map[ebiten.Key]int
 }
 
 func (frontend *Frontend) Update() error {
-	var pressedKeys []ebiten.Key
-	pressedKeys = inpututil.AppendPressedKeys(pressedKeys)
-
 	chip8 := frontend.chip8
 	chip8.Lock.Lock()
 	defer chip8.Lock.Unlock()
 
-	if len(pressedKeys) == 0 {
-		chip8.PressedKey = nil
-		frontend.previouslyPressedKey = nil
-	} else {
-		pressedKey := pressedKeys[0]
-		if len(pressedKeys) == 1 && frontend.previouslyPressedKey == nil {
-			frontend.previouslyPressedKey = &pressedKey
-		} else if len(pressedKeys) > 1 && frontend.previouslyPressedKey != nil {
-			//multiple keys are pressed
-			for _, newlyPressedKey := range pressedKeys {
-				if newlyPressedKey != *frontend.previouslyPressedKey {
-					pressedKey = newlyPressedKey
-				}
-			}
-		}
-
-		if chip8Key, mappingExist := frontend.keyboardMapping[pressedKey]; mappingExist {
-			chip8KeyReference := uint8(chip8Key)
-			chip8.PressedKey = &chip8KeyReference
+	for key, chip8Key := range frontend.keyboardMapping {
+		if chip8Key < len(chip8.Keys) {
+			chip8.Keys[chip8Key] = ebiten.IsKeyPressed(key)
 		}
 	}
 

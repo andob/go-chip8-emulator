@@ -163,11 +163,6 @@ func add1(chip8 *System, i uint8, value uint8) {
 	if int(i) < len(chip8.Registers) {
 		result := uint16(chip8.Registers[i]) + uint16(value)
 		chip8.Registers[i] = uint8(result & 0xFF)
-		if result > 0xFF {
-			chip8.Registers[0x0F] = 1 //overflow
-		} else {
-			chip8.Registers[0x0F] = 0
-		}
 	}
 }
 
@@ -182,6 +177,7 @@ func or(chip8 *System, i uint8, j uint8) {
 	//bitwise or: Ri = Ri | Rj
 	if int(i) < len(chip8.Registers) && int(j) < len(chip8.Registers) {
 		chip8.Registers[i] |= chip8.Registers[j]
+		chip8.Registers[0x0F] = 0
 	}
 }
 
@@ -189,6 +185,7 @@ func and(chip8 *System, i uint8, j uint8) {
 	//bitwise and: Ri = Ri & Rj
 	if int(i) < len(chip8.Registers) && int(j) < len(chip8.Registers) {
 		chip8.Registers[i] &= chip8.Registers[j]
+		chip8.Registers[0x0F] = 0
 	}
 }
 
@@ -196,6 +193,7 @@ func xor(chip8 *System, i uint8, j uint8) {
 	//bitwise xor: Ri = Ri ^ Rj
 	if int(i) < len(chip8.Registers) && int(j) < len(chip8.Registers) {
 		chip8.Registers[i] ^= chip8.Registers[j]
+		chip8.Registers[0x0F] = 0
 	}
 }
 
@@ -241,20 +239,18 @@ func subn(chip8 *System, i uint8, j uint8) {
 func shr(chip8 *System, i uint8) {
 	//shift right: Ri = Ri >> 1
 	if int(i) < len(chip8.Registers) {
-		if chip8.Registers[i]&0b00000001 == 1 {
-			chip8.Registers[0x0F] = 1
-		} else {
-			chip8.Registers[0x0F] = 0
-		}
+		carry := chip8.Registers[i] & 0b00000001
 		chip8.Registers[i] >>= 1
+		chip8.Registers[0x0F] = carry
 	}
 }
 
 func shl(chip8 *System, i uint8) {
 	//shift left: Ri = Ri << 1
 	if int(i) < len(chip8.Registers) {
-		chip8.Registers[0x0F] = (chip8.Registers[i] & 0b10000000) >> 7
+		carry := (chip8.Registers[i] & 0b10000000) >> 7
 		chip8.Registers[i] <<= 1
+		chip8.Registers[0x0F] = carry
 	}
 }
 
@@ -313,7 +309,7 @@ func skp(chip8 *System, i uint8) {
 	//skip next instruction if key i is pressed
 	if int(i) < len(chip8.Registers) {
 		expectedKey := chip8.Registers[i]
-		if chip8.PressedKey != nil && *chip8.PressedKey == expectedKey {
+		if int(expectedKey) < len(chip8.Keys) && chip8.Keys[expectedKey] {
 			chip8.nextOpcode()
 		}
 	}
@@ -323,7 +319,7 @@ func sknp(chip8 *System, i uint8) {
 	//skip next instruction if key i is not pressed
 	if int(i) < len(chip8.Registers) {
 		expectedKey := chip8.Registers[i]
-		if chip8.PressedKey == nil || (chip8.PressedKey != nil && *chip8.PressedKey != expectedKey) {
+		if int(expectedKey) < len(chip8.Keys) && !chip8.Keys[expectedKey] {
 			chip8.nextOpcode()
 		}
 	}
@@ -339,10 +335,23 @@ func ld4(chip8 *System, i uint8) {
 func ldk(chip8 *System, i uint8) {
 	//block until a key is pressed, and store the key into Ri
 	if int(i) < len(chip8.Registers) {
-		for chip8.PressedKey == nil {
-			time.Sleep(LAG)
+		isKeyPressed := false
+		var pressedKey uint8 = 0
+		for !isKeyPressed {
+			for keyIndex := range chip8.Keys {
+				if chip8.Keys[keyIndex] {
+					isKeyPressed = true
+					pressedKey = uint8(keyIndex)
+					break
+				}
+			}
+
+			if !isKeyPressed {
+				time.Sleep(LAG)
+			}
 		}
-		chip8.Registers[i] = *chip8.PressedKey
+
+		chip8.Registers[i] = pressedKey
 	}
 }
 
@@ -365,11 +374,6 @@ func add3(chip8 *System, i uint8) {
 	if int(i) < len(chip8.Registers) {
 		result := uint32(chip8.Registers[i]) + uint32(chip8.Index)
 		chip8.Index = uint16(result & 0xFFFF)
-		if result > 0x00FF {
-			chip8.Registers[0x0F] = 1 //overflow
-		} else {
-			chip8.Registers[0x0F] = 0
-		}
 	}
 }
 
@@ -397,10 +401,10 @@ func reg2mem(chip8 *System, amount uint8) {
 	//store registers R0..R_amount into RAM at location I+0..I+amount
 	if int(amount) < len(chip8.Registers) {
 		for i := 0; i <= int(amount); i++ {
-			pointer := int(chip8.Index) + i
-			if pointer < len(chip8.RAM) {
-				chip8.RAM[pointer] = chip8.Registers[i]
+			if int(chip8.Index) < len(chip8.RAM) {
+				chip8.RAM[chip8.Index] = chip8.Registers[i]
 			}
+			chip8.Index++
 		}
 	}
 }
@@ -409,10 +413,10 @@ func mem2reg(chip8 *System, amount uint8) {
 	//store RAM at location I+0..I+amount into registers R0..R_amount
 	if int(amount) < len(chip8.Registers) {
 		for i := 0; i <= int(amount); i++ {
-			pointer := int(chip8.Index) + i
-			if pointer < len(chip8.RAM) {
-				chip8.Registers[i] = chip8.RAM[pointer]
+			if int(chip8.Index) < len(chip8.RAM) {
+				chip8.Registers[i] = chip8.RAM[chip8.Index]
 			}
+			chip8.Index++
 		}
 	}
 }

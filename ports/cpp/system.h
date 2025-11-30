@@ -22,8 +22,7 @@ class System
     uint8_t sound_timer;
     array<array<bool, DISPLAY_HEIGHT>, DISPLAY_WIDTH> display;
     Font font;
-    bool is_key_pressed;
-    uint8_t pressed_key;
+    array<bool, KEYPAD_SIZE> keys;
 
     uint16_t next_opcode();
     void cpu_tick();
@@ -44,8 +43,8 @@ class System
     void add2(uint8_t i, uint8_t j);
     void sub(uint8_t i, uint8_t j);
     void subn(uint8_t i, uint8_t j);
-    void shr(uint8_t i);
-    void shl(uint8_t i);
+    void shr(uint8_t ix);
+    void shl(uint8_t ix);
     void sne2(uint8_t i, uint8_t j);
     void ld3(uint16_t value);
     void jp2(uint16_t pointer);

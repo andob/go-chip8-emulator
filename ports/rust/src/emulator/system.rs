@@ -270,8 +270,6 @@ fn add1(chip8 : &mut System, i : u8, value : u8)
     {
         let result = (chip8.registers[i as usize] as u16) + (value as u16);
         chip8.registers[i as usize] = (result & 0xFF) as u8;
-        if result > 0xFF { chip8.registers[0x0F] = 1; }
-        else { chip8.registers[0x0F] = 0; }
     }
 }
 
@@ -290,6 +288,7 @@ fn or(chip8 : &mut System, i : u8, j : u8)
     if i < chip8.registers.len() as u8 && j < chip8.registers.len() as u8
     {
         chip8.registers[i as usize] |= chip8.registers[j as usize];
+        chip8.registers[0x0F] = 0;
     }
 }
 
@@ -299,6 +298,7 @@ fn and(chip8 : &mut System, i : u8, j : u8)
     if i < chip8.registers.len() as u8 && j < chip8.registers.len() as u8
     {
         chip8.registers[i as usize] &= chip8.registers[j as usize];
+        chip8.registers[0x0F] = 0;
     }
 }
 
@@ -308,6 +308,7 @@ fn xor(chip8 : &mut System, i : u8, j : u8)
     if i < chip8.registers.len() as u8 && j < chip8.registers.len() as u8
     {
         chip8.registers[i as usize] ^= chip8.registers[j as usize];
+        chip8.registers[0x0F] = 0;
     }
 }
 
@@ -352,8 +353,9 @@ fn shr(chip8 : &mut System, i : u8)
     //shift right: Ri = Ri >> 1
     if i < chip8.registers.len() as u8
     {
-        chip8.registers[0x0F] = chip8.registers[i as usize] & 0b00000001;
+        let carry = chip8.registers[i as usize] & 0b00000001;
         chip8.registers[i as usize] >>= 1;
+        chip8.registers[0x0F] = carry;
     }
 }
 
@@ -362,8 +364,9 @@ fn shl(chip8 : &mut System, i : u8)
     //shift left: Ri = Ri << 1
     if i < chip8.registers.len() as u8
     {
-        chip8.registers[0x0F] = (chip8.registers[i as usize] & 0b10000000) >> 7;
+        let carry = (chip8.registers[i as usize] & 0b10000000) >> 7;
         chip8.registers[i as usize] <<= 1;
+        chip8.registers[0x0F] = carry;
     }
 }
 
@@ -518,8 +521,6 @@ fn add3(chip8 : &mut System, i : u8)
     {
         let result = (chip8.registers[i as usize] as u32) + (chip8.index as u32);
         chip8.index = (result & 0xFFFF) as u16;
-        if result > 0x00FF { chip8.registers[0x0F] = 1; }
-        else { chip8.registers[0x0F] = 0; }
     }
 }
 
@@ -555,11 +556,12 @@ fn reg2mem(chip8 : &mut System, amount : u8)
     {
         for i in 0..=amount
         {
-            let pointer = chip8.index + (i as u16);
-            if pointer < chip8.ram.len() as u16
+            if chip8.index < chip8.ram.len() as u16
             {
-                chip8.ram[pointer as usize] = chip8.registers[i as usize];
+                chip8.ram[chip8.index as usize] = chip8.registers[i as usize];
             }
+
+            chip8.index += 1;
         }
     }
 }
@@ -571,11 +573,12 @@ fn mem2reg(chip8 : &mut System, amount : u8)
     {
         for i in 0..=amount
         {
-            let pointer = chip8.index + (i as u16);
-            if pointer < chip8.ram.len() as u16
+            if chip8.index < chip8.ram.len() as u16
             {
-                chip8.registers[i as usize] = chip8.ram[pointer as usize];
+                chip8.registers[i as usize] = chip8.ram[chip8.index as usize];
             }
+
+            chip8.index += 1;
         }
     }
 }

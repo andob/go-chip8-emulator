@@ -17,8 +17,7 @@ class System {
     uint8_t soundTimer;
     Display display;
     Display oldDisplay;
-    bool isKeyPressed;
-    uint8_t pressedKey;
+    bool keys[keypadSize];
 
     uint16_t nextOpcode();
     void cpuTick();

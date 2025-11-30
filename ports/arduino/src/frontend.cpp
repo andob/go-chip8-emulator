@@ -1,6 +1,6 @@
 #include "frontend.h"
 
-#define xOffset 8
+#define xOffset 0
 #define yOffset 8
 #define blockWidth 5
 #define blockHeight 7

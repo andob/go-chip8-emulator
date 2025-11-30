@@ -1,5 +1,10 @@
 #include "system.h"
+
+#include <iomanip>
 #include <iostream>
+
+#define ENABLE_OPCODE_LOGGING
+#undef ENABLE_OPCODE_LOGGING
 
 System::System(const vector<uint8_t>& rom_bytes) : font(Font::get_default())
 {
@@ -9,7 +14,7 @@ System::System(const vector<uint8_t>& rom_bytes) : font(Font::get_default())
     this->registers_backup.fill(0);
     this->program_counter = this->index = 0;
     this->delay_timer = this->sound_timer = 0;
-    this->is_key_pressed = this->pressed_key = 0;
+    this->keys.fill(false);
 
     //load font into RAM
     for (FontCharacter character : this->font.get_characters())
@@ -53,6 +58,11 @@ void System::cpu_tick()
     //http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
     const uint16_t opcode = this->next_opcode();
 
+    #ifdef ENABLE_OPCODE_LOGGING
+    cout << hex << uppercase << setfill('0');
+    cout << setw(4) << opcode << ' ';
+    #endif
+
     if (opcode == 0x00E0) this->cls();
     else if (opcode == 0x00EE) this->ret();
     else if ((opcode>>0xC) == 0x1) this->jp1(opcode&0x0FFF);
@@ -90,6 +100,12 @@ void System::cpu_tick()
     else if ((opcode>>0xC) == 0xF && (opcode&0xFF) == 0x75) this->reg2backup(((opcode>>8)&0x0F));
     else if ((opcode>>0xC) == 0xF && (opcode&0xFF) == 0x85) this->backup2reg(((opcode>>8)&0x0F));
     else if (opcode) cout << "Opcode not implemented " << hex << opcode << "!\n";
+
+    #ifdef ENABLE_OPCODE_LOGGING
+    for (int i = 0; i < REGISTERS_SIZE; i++)
+        cout << setw(2) << static_cast<int>(registers[i]) << ' ';
+    cout << setw(4) << program_counter << '\n';
+    #endif
 }
 
 void System::cls()
@@ -173,7 +189,6 @@ void System::add1(uint8_t i, uint8_t value)
         const uint16_t result = static_cast<uint16_t>(this->registers[i]) + value;
 
         this->registers[i] = result & 0xFF;
-        this->registers[0x0F] = result > 0xFF ? 1 : 0;
     }
 }
 
@@ -192,6 +207,7 @@ void System::_or(uint8_t i, uint8_t j)
     if (i < REGISTERS_SIZE && j < REGISTERS_SIZE)
     {
         this->registers[i] |= this->registers[j];
+        this->registers[0x0F] = 0;
     }
 }
 
@@ -201,6 +217,7 @@ void System::_and(uint8_t i, uint8_t j)
     if (i < REGISTERS_SIZE && j < REGISTERS_SIZE)
     {
         this->registers[i] &= this->registers[j];
+        this->registers[0x0F] = 0;
     }
 }
 
@@ -210,6 +227,7 @@ void System::_xor(uint8_t i, uint8_t j)
     if (i < REGISTERS_SIZE && j < REGISTERS_SIZE)
     {
         this->registers[i] ^= this->registers[j];
+        this->registers[0x0F] = 0;
     }
 }
 
@@ -254,8 +272,9 @@ void System::shr(uint8_t i)
     //shift right: Ri = Ri >> 1
     if (i < REGISTERS_SIZE)
     {
-        this->registers[0x0F] = this->registers[i] & 0b00000001;
+        uint8_t carry = this->registers[i] & 0b00000001;
         this->registers[i] >>= 1;
+        this->registers[0x0F] = carry;
     }
 }
 
@@ -264,8 +283,9 @@ void System::shl(uint8_t i)
     //shift left: Ri = Ri << 1
     if (i < REGISTERS_SIZE)
     {
-        this->registers[0x0F] = (this->registers[i] & 0b10000000) >> 7;
+        uint8_t carry = (this->registers[i] & 0b10000000) >> 7;
         this->registers[i] <<= 1;
+        this->registers[0x0F] = carry;
     }
 }
 
@@ -337,7 +357,7 @@ void System::skp(uint8_t i)
     if (i < REGISTERS_SIZE)
     {
         const uint8_t expected_key = this->registers[i];
-        if (this->is_key_pressed && this->pressed_key == expected_key)
+        if (expected_key < KEYPAD_SIZE && this->keys[expected_key])
         {
             this->next_opcode();
         }
@@ -350,11 +370,7 @@ void System::sknp(uint8_t i)
     if (i < REGISTERS_SIZE)
     {
         const uint8_t expected_key = this->registers[i];
-        if (this->is_key_pressed && this->pressed_key != expected_key)
-        {
-            this->next_opcode();
-        }
-        else if (!this->is_key_pressed)
+        if (expected_key < KEYPAD_SIZE && !this->keys[expected_key])
         {
             this->next_opcode();
         }
@@ -375,9 +391,20 @@ void System::ldk(uint8_t i)
     //block until a key is pressed, and store the key into Ri
     if (i < REGISTERS_SIZE)
     {
-        while (!this->is_key_pressed) {}
+        bool is_key_pressed = false;
+        uint8_t pressed_key = 0;
+        for (int key = 0; key < KEYPAD_SIZE; key++)
+        {
+            if (this->keys[key])
+            {
+                is_key_pressed = true;
+                pressed_key = key;
+            }
+        }
 
-        this->registers[i] = this->pressed_key;
+        if (is_key_pressed)
+            this->registers[i] = pressed_key;
+        else this->program_counter -= 2;
     }
 }
 
@@ -407,7 +434,6 @@ void System::add3(uint8_t i)
         const uint32_t result = static_cast<uint32_t>(this->registers[i]) + this->index;
 
         this->index = result & 0xFFFF;
-        this->registers[0x0F] = result > 0x00FF ? 1 : 0;
     }
 }
 
@@ -443,11 +469,9 @@ void System::reg2mem(uint8_t amount)
     {
         for (uint8_t i = 0; i <= amount; i++)
         {
-            const uint16_t pointer = this->index + i;
-            if (pointer < RAM_SIZE)
-            {
-                this->ram[pointer] = this->registers[i];
-            }
+            if (this->index < RAM_SIZE)
+                this->ram[this->index] = this->registers[i];
+            this->index++;
         }
     }
 }
@@ -459,11 +483,9 @@ void System::mem2reg(uint8_t amount)
     {
         for (uint8_t i = 0; i <= amount; i++)
         {
-            const uint16_t pointer = this->index + i;
-            if (pointer < RAM_SIZE)
-            {
-                this->registers[i] = this->ram[pointer];
-            }
+            if (this->index < RAM_SIZE)
+                this->registers[i] = this->ram[this->index];
+            this->index++;
         }
     }
 }
@@ -505,7 +527,7 @@ void System::iterate_display(const function<void(uint8_t, uint8_t, bool)>& callb
 
 void System::vblank()
 {
-    for (uint32_t i = 0; i < 10000; i++)
+    for (uint32_t i = 0; i < 10; i++)
     {
         this->cpu_tick();
     }
@@ -523,12 +545,10 @@ void System::vblank()
 
 void System::notify_on_key_down(const uint8_t key)
 {
-    this->is_key_pressed = true;
-    this->pressed_key = key;
+    this->keys[key] = true;
 }
 
 void System::notify_on_key_up(const uint8_t key)
 {
-    this->is_key_pressed = false;
-    this->pressed_key = key;
+    this->keys[key] = false;
 }

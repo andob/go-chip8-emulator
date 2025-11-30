@@ -28,5 +28,6 @@
 #define keyDCode 0x0D
 #define keyECode 0x0E
 #define keyFCode 0x0F
+#define keypadSize 16
 
 #endif

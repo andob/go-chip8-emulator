@@ -9,7 +9,6 @@ System::System(const uint8_t* romBytes, const size_t romLength) {
     //initialise fields
     this->programCounter = this->index = 0;
     this->delayTimer = this->soundTimer = 0;
-    this->isKeyPressed = this->pressedKey = 0;
 
     //clear memory
     for (int i = 0; i < ramSize; i++) {
@@ -163,7 +162,6 @@ void System::add1(uint8_t i, uint8_t value) {
         const uint16_t result = static_cast<uint16_t>(this->registers[i]) + value;
 
         this->registers[i] = result & 0xFF;
-        this->registers[0x0F] = result > 0xFF ? 1 : 0;
     }
 }
 
@@ -178,6 +176,7 @@ void System::_or(uint8_t i, uint8_t j) {
     //bitwise or: Ri = Ri | Rj
     if (i < registersSize && j < registersSize) {
         this->registers[i] |= this->registers[j];
+        this->registers[0x0F] = 0;
     }
 }
 
@@ -185,6 +184,7 @@ void System::_and(uint8_t i, uint8_t j) {
     //bitwise and: Ri = Ri & Rj
     if (i < registersSize && j < registersSize) {
         this->registers[i] &= this->registers[j];
+        this->registers[0x0F] = 0;
     }
 }
 
@@ -192,6 +192,7 @@ void System::_xor(uint8_t i, uint8_t j) {
     //bitwise xor: Ri = Ri ^ Rj
     if (i < registersSize && j < registersSize) {
         this->registers[i] ^= this->registers[j];
+        this->registers[0x0F] = 0;
     }
 }
 
@@ -228,16 +229,18 @@ void System::subn(uint8_t i, uint8_t j) {
 void System::shr(uint8_t i) {
     //shift right: Ri = Ri >> 1
     if (i < registersSize) {
-        this->registers[0x0F] = this->registers[i] & 0b00000001;
+        uint8_t carry = this->registers[i] & 0b00000001;
         this->registers[i] >>= 1;
+        this->registers[0x0F] = carry;
     }
 }
 
 void System::shl(uint8_t i) {
     //shift left: Ri = Ri << 1
     if (i < registersSize) {
-        this->registers[0x0F] = (this->registers[i] & 0b10000000) >> 7;
+        uint8_t carry = (this->registers[i] & 0b10000000) >> 7;
         this->registers[i] <<= 1;
+        this->registers[0x0F] = carry;
     }
 }
 
@@ -298,7 +301,7 @@ void System::skp(uint8_t i) {
     //skip next instruction if key i is pressed
     if (i < registersSize) {
         const uint8_t expectedKey = this->registers[i];
-        if (this->isKeyPressed && this->pressedKey == expectedKey) {
+        if (expectedKey < keypadSize && this->keys[expectedKey]) {
             this->nextOpcode();
         }
     }
@@ -308,9 +311,7 @@ void System::sknp(uint8_t i) {
     //skip next instruction if key i is not pressed
     if (i < registersSize) {
         const uint8_t expectedKey = this->registers[i];
-        if (this->isKeyPressed && this->pressedKey != expectedKey) {
-            this->nextOpcode();
-        } else if (!this->isKeyPressed) {
+        if (expectedKey < keypadSize && !this->keys[expectedKey]) {
             this->nextOpcode();
         }
     }
@@ -326,9 +327,18 @@ void System::ld4(uint8_t i) {
 void System::ldk(uint8_t i) {
     //block until a key is pressed, and store the key into Ri
     if (i < registersSize) {
-        while (!this->isKeyPressed) {}
+        bool isKeyPressed = false;
+        uint8_t pressedKey = 0;
+        for (int key = 0; key < keypadSize; key++) {
+            if (this->keys[key]) {
+                isKeyPressed = true;
+                pressedKey = key;
+            }
+        }
 
-        this->registers[i] = this->pressedKey;
+        if (isKeyPressed)
+            this->registers[i] = pressedKey;
+        else this->programCounter -= 2;
     }
 }
 
@@ -352,7 +362,6 @@ void System::add3(uint8_t i) {
         const uint32_t result = static_cast<uint32_t>(this->registers[i]) + this->index;
 
         this->index = result & 0xFFFF;
-        this->registers[0x0F] = result > 0x00FF ? 1 : 0;
     }
 }
 
@@ -380,10 +389,9 @@ void System::reg2mem(uint8_t amount) {
     //store registers R[0]..R[amount] into RAM at location I+0..I+amount
     if (amount < registersSize) {
         for (uint8_t i = 0; i <= amount; i++) {
-            const uint16_t pointer = this->index + i;
-            if (pointer < ramSize) {
-                this->ram[pointer] = this->registers[i];
-            }
+            if (this->index < ramSize)
+                this->ram[this->index] = this->registers[i];
+            this->index++;
         }
     }
 }
@@ -392,10 +400,9 @@ void System::mem2reg(uint8_t amount) {
     //store RAM at location I+0..I+amount into registers R[0]..R[amount]
     if (amount < registersSize) {
         for (uint8_t i = 0; i <= amount; i++) {
-            const uint16_t pointer = this->index + i;
-            if (pointer < ramSize) {
-                this->registers[i] = this->ram[pointer];
-            }
+            if (this->index < ramSize)
+                this->registers[i] = this->ram[this->index];
+            this->index++;
         }
     }
 }
@@ -456,7 +463,7 @@ bool System::getPixel(const uint8_t x, const uint8_t y) const {
 void System::vblank() {
     this->oldDisplay.copyFrom(&this->display);
 
-    for (uint32_t i = 0; i < 10000; i++) {
+    for (uint32_t i = 0; i < 10; i++) {
         this->cpuTick();
     }
 
@@ -470,11 +477,9 @@ void System::vblank() {
 }
 
 void System::notifyOnKeyDown(const uint8_t key) {
-    this->isKeyPressed = true;
-    this->pressedKey = key;
+    this->keys[key] = true;
 }
 
 void System::notifyOnKeyUp(const uint8_t key) {
-    this->isKeyPressed = false;
-    this->pressedKey = key;
+    this->keys[key] = false;
 }
