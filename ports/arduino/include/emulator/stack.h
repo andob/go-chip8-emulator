@@ -3,8 +3,8 @@
 #include "constants.h"
 
 class Stack {
-    uint16_t data[stackSize];
-    uint8_t pointer;
+    uint16_t data[stackSize] = {};
+    uint8_t pointer = 0;
 
 public:
     Stack() = default;

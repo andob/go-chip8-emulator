@@ -5,7 +5,7 @@
 
 class Display {
 private:
-    uint8_t pixels[displayWidth][displayHeight / nofBitsInByte];
+    uint8_t pixels[displayWidth][displayHeight / nofBitsInByte] = {};
 
 public:
     Display() = default;

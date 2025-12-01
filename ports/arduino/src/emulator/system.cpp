@@ -6,6 +6,22 @@
 #undef enableOpcodeLogging
 
 System::System(const uint8_t* romBytes, const size_t romLength) {
+    this->reset();
+
+    for (uint16_t i = 0; i < romLength; i++) {
+        this->ram[this->programCounter + i] = pgm_read_byte(&romBytes[i]);
+    }
+}
+
+void System::loadGameFile(File gameFile) {
+    this->reset();
+
+    Serial.println(gameFile.name());
+    gameFile.readBytes(this->ram + this->programCounter, gameFile.size());
+    gameFile.close();
+}
+
+void System::reset() {
     //initialise fields
     this->programCounter = this->index = 0;
     this->delayTimer = this->soundTimer = 0;
@@ -29,14 +45,8 @@ System::System(const uint8_t* romBytes, const size_t romLength) {
         }
     }
 
-    //load ROM into RAM
-    this->programCounter = 0x200; //load ROM into RAM index 200
-
-    for (uint16_t i = 0; i < romLength; i++) {
-        //todo ROM should be loaded from SD card
-        //todo this->ram[this->programCounter + i] = romBytes[i];
-        this->ram[this->programCounter + i] = pgm_read_byte(&romBytes[i]);
-    }
+    //set initial program counter
+    this->programCounter = 0x200;
 
     //clear display
     this->cls();

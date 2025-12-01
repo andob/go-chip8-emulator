@@ -1,23 +1,23 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 #include <stdint.h>
-#include <stddef.h>
 #include "constants.h"
 #include "display.h"
+#include "game_file_loader.h"
 #include "emulator/stack.h"
 
 class System {
-    uint8_t ram[ramSize];
-    uint8_t registers[registersSize];
-    uint8_t registersBackup[registersSize];
-    uint16_t programCounter;
-    uint16_t index;
+    uint8_t ram[ramSize] = {};
+    uint8_t registers[registersSize] = {};
+    uint8_t registersBackup[registersSize] = {};
+    uint16_t programCounter = 0;
+    uint16_t index = 0;
     Stack stack;
-    uint8_t delayTimer;
-    uint8_t soundTimer;
+    uint8_t delayTimer = 0;
+    uint8_t soundTimer = 0;
     Display display;
     Display oldDisplay;
-    bool keys[keypadSize];
+    bool keys[keypadSize] = {};
 
     uint16_t nextOpcode();
     void cpuTick();
@@ -62,7 +62,9 @@ class System {
     void log(uint8_t opcode) const;
 
 public:
-    System(const uint8_t* romBytes, size_t romLength);
+    System(const uint8_t* romBytes, const size_t romLength);
+    void loadGameFile(File gameFile);
+    void reset();
 
     bool wasPixelChanged(uint8_t x, uint8_t y) const;
     bool getPixel(uint8_t x, uint8_t y) const;
